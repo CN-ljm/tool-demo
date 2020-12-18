@@ -1,12 +1,12 @@
 package tool.image.pdf;
 
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Image;
-import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class PdfUtil {
 
@@ -61,4 +61,35 @@ public class PdfUtil {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 添加图片
+     * @param imagePath
+     */
+    public static void addImage(String pdfPath, String imagePath) throws IOException, DocumentException {
+        Document pdfDoc = new Document();
+        // 将要生成的 pdf 文件的路径输出流
+        FileOutputStream pdfFile = new FileOutputStream(new File(pdfPath));
+
+        // 添加图片
+        Image image = Image.getInstance(imagePath);
+
+        // 用 Document 对象、File 对象获得 PdfWriter 输出流对象
+        PdfWriter.getInstance(pdfDoc, pdfFile);
+        pdfDoc.open(); // 打开 Document 文档
+
+        // 一张图片
+        pdfDoc.add(image);
+
+        pdfDoc.close();
+    }
+
+    /**
+     * 添加内容
+     * @param content
+     */
+    public static void addContent(String content) {
+
+    }
+
 }
