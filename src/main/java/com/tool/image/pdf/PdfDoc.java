@@ -1,4 +1,4 @@
-package tool.image.pdf;
+package com.tool.image.pdf;
 
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -116,7 +116,7 @@ public class PdfDoc {
         doc.addSubject("ImageToPdf");
         doc.addAuthor("ljm");
         try(FileOutputStream os = new FileOutputStream(pdfPath)) {
-            PdfWriter.getInstance(doc, os);
+            PdfWriter writer = PdfWriter.getInstance(doc, os);
             doc.open();
             for (String path: imagePaths) {
                 String type = path.toLowerCase().substring(path.toLowerCase().lastIndexOf("."));
@@ -129,6 +129,8 @@ public class PdfDoc {
                 doc.add(image);
             }
             doc.close();
+            writer.flush();
+            writer.close();
         } catch (Exception e){
             e.printStackTrace();
             if (doc != null) {
@@ -163,7 +165,6 @@ public class PdfDoc {
             // 开始处理合并
             int pageCount = 0;
             for(PdfReader reader: readers) {
-
                 while (pageCount < reader.getNumberOfPages()) {
                     doc.newPage();
                     pageCount++;
@@ -175,6 +176,11 @@ public class PdfDoc {
             os.flush();
             doc.close();
             writer.close();
+            // 读完了要关闭
+            for (PdfReader reader: readers) {
+                reader.close();
+            }
+
         } catch (Exception e){
             e.printStackTrace();
             if (writer != null) {

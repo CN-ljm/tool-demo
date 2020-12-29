@@ -1,11 +1,10 @@
-package tool.image.pdf;
+package com.tool.image.pdf;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class PdfUtil {
@@ -46,9 +45,11 @@ public class PdfUtil {
         // 少的话就不用多线程了
         int images = files.length;
         List<String> imagePaths = Arrays.asList(imageDirFile.listFiles()).stream().map(one -> one.getAbsolutePath()).collect(Collectors.toList());
-        if (images > CONCURRENT_THREADS && images > CONCURRENT_PROCESS_THRESHOLD) {
+        if (images < CONCURRENT_THREADS || images < CONCURRENT_PROCESS_THRESHOLD) {
+            System.out.println("单线程");
             pdfDoc.imagesToPdf(pdfPath, imagePaths);
         } else {
+            System.out.println("多线程");
             // temp 存放临时pdf
             String tempPath = pdfFileParent.getAbsolutePath() + File.separator + "temp";
             File tempFile = new File(tempPath);
@@ -57,8 +58,8 @@ public class PdfUtil {
             }
             tempFile.mkdirs();
 
-            // 创建内存墙
-            CyclicBarrier cyclicBarrier = new CyclicBarrier(CONCURRENT_THREADS, () -> pdfDoc.mergePdf(pdfPath, tempPath));
+            // 多线程控制器
+            CountDownLatch countDownLatch =new CountDownLatch(CONCURRENT_THREADS);
 
             // 计算每个线程分配任务数
             int taskImageCount = images/(CONCURRENT_THREADS - 1);
@@ -70,20 +71,19 @@ public class PdfUtil {
                 Runnable run = new Runnable() {
                     @Override
                     public void run() {
-                        try {
-                            pdfDoc.imagesToPdf(pdfTempPath, taskImageList);
-                            cyclicBarrier.await();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (BrokenBarrierException e) {
-                            e.printStackTrace();
-                        }
+                        pdfDoc.imagesToPdf(pdfTempPath, taskImageList);
+                        countDownLatch.countDown();
                     }
                 };
                 Thread task = new Thread(run);
                 task.start();
             }
-
+            try {
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            pdfDoc.mergePdf(pdfPath, tempPath);
         }
 
     }

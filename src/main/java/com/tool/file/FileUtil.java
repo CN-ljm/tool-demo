@@ -1,4 +1,4 @@
-package tool.file;
+package com.tool.file;
 
 import java.io.*;
 import java.nio.ByteBuffer;
