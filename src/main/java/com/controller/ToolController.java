@@ -1,6 +1,8 @@
 package com.controller;
 
+import com.tool.image.ImageUtil;
 import com.tool.image.pdf.PdfUtil;
+import com.tool.zip.ZipUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,7 +40,7 @@ public class ToolController {
         }
 
         response.setHeader("content-type", "application/pdf");
-        response.setContentType("application/octet-stream");
+//        response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=" + pdfPath);
 
         BufferedInputStream bin = null;
@@ -70,6 +72,50 @@ public class ToolController {
             }
         }
 
+    }
+
+    @PostMapping("/getZipFile")
+    public void getZipFile(HttpServletRequest request, HttpServletResponse response) {
+        String zipPath = request.getParameter("zipPath");
+        log.info("生成ZIP路径：{}", zipPath);
+        String srcDirPath = request.getParameter("srcDirPath");
+        log.info("压缩源文件路径：{}", srcDirPath);
+
+        // 压缩
+        ZipUtil.zipFileDir(zipPath, srcDirPath);
+
+        File zipFile = new File(zipPath);
+        if (!zipFile.exists()) {
+            return;
+        }
+        response.setHeader("content-type", "application/zip");
+//        response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=" + zipPath);
+        try(OutputStream out = response.getOutputStream(); InputStream in = new FileInputStream(zipFile)) {
+            byte[] buff = new byte[1024*1024*10];
+            int read = in.read(buff);
+            while (read != -1) {
+                out.write(buff,0, read);
+                read = in.read(buff);
+            }
+            out.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @PostMapping("/getCompressionImage")
+    public void getCompressionImage(HttpServletRequest request, HttpServletResponse response) {
+        String srcImagePath = request.getParameter("srcImagePath");
+        response.setHeader("content-type", "image/jpeg");// application/x-png;image/jpeg;
+//        response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=" + srcImagePath);
+        try(OutputStream out = response.getOutputStream()) {
+            ImageUtil.compression(srcImagePath, out);
+            out.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
